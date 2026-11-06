@@ -1,0 +1,5 @@
+bin/
+.direnv/
+*.test
+*.out
+.DS_Store
