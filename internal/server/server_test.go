@@ -304,11 +304,30 @@ func TestProtocolUTF16AfterEmoji(t *testing.T) {
 	}
 }
 
-func TestProtocolPrefersUTF32(t *testing.T) {
+func TestProtocolPrefersUTF8(t *testing.T) {
 	c := startServer(t)
-	caps := c.open("x", "utf-8", "utf-16", "utf-32")["capabilities"].(map[string]any)
-	if caps["positionEncoding"] != "utf-32" {
+	caps := c.open("x", "utf-16", "utf-32", "utf-8")["capabilities"].(map[string]any)
+	if caps["positionEncoding"] != "utf-8" {
 		t.Errorf("encoding = %v", caps["positionEncoding"])
+	}
+	c = startServer(t)
+	caps = c.open("x", "utf-16", "utf-32")["capabilities"].(map[string]any)
+	if caps["positionEncoding"] != "utf-32" {
+		t.Errorf("without utf-8, encoding = %v", caps["positionEncoding"])
+	}
+}
+
+// A second word after Greek text: offsets are bytes, as Neovim negotiates
+// (σπίτι is 10 bytes), and the range covers only the word being typed.
+func TestProtocolWordAfterGreek(t *testing.T) {
+	c := startServer(t)
+	c.open("σπίτι spit", "utf-8", "utf-16", "utf-32")
+	result := c.request("textDocument/completion", at(0, 15))["result"]
+	if got := get(result, "items", 0, "textEdit", "newText"); got != "σπίτι" {
+		t.Errorf("newText = %v", got)
+	}
+	if got := get(result, "items", 0, "textEdit", "range", "start", "character"); got != 11.0 {
+		t.Errorf("range start = %v, want byte 11", got)
 	}
 }
 

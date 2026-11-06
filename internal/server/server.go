@@ -259,8 +259,11 @@ func (s *Server) initialize(params json.RawMessage) (any, error) {
 	}
 	s.dict = dict
 
+	// Prefer UTF-8, Neovim's own unit: mini.completion takes a textEdit's
+	// start character as a byte column without converting it, so in any other
+	// encoding a word after Greek text on the same line gets the wrong start.
 	s.encoding = "utf-16"
-	for _, enc := range []string{"utf-32", "utf-16", "utf-8"} {
+	for _, enc := range []string{"utf-8", "utf-32", "utf-16"} {
 		if slices.Contains(p.Capabilities.General.PositionEncodings, enc) {
 			s.encoding = enc
 			break
